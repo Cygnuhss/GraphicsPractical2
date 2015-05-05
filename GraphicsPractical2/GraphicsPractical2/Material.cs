@@ -29,9 +29,9 @@ namespace GraphicsPractical2
         public float DisplacementFactor;
         // Color of the specular highlight (mostly equal to the color of the light source)
         public Color SpecularColor;
-        // The intensity factor of the specular highlight, controls it's size
+        // The intensity factor of the specular highlight, controls its size
         public float SpecularIntensity;
-        // The power term of the specular highlight, controls it's smoothness
+        // The power term of the specular highlight, controls its smoothness
         public float SpecularPower;
         // Special surface color, use normals as color
         public bool NormalColoring;
