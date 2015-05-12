@@ -20,7 +20,7 @@ namespace GraphicsPractical2
 
         // Game objects and variables
         private Camera camera;
-        
+
         // Model
         private Model model;
         private Material modelMaterial;
@@ -115,7 +115,7 @@ namespace GraphicsPractical2
         {
             // Clear the screen in a predetermined color and clear the depth buffer
             this.GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.DeepSkyBlue, 1.0f, 0);
-            
+
             // Get the model's only mesh
             ModelMesh mesh = this.model.Meshes[0];
             Effect effect = mesh.Effects[0];
@@ -125,6 +125,13 @@ namespace GraphicsPractical2
             // Matrices for 3D perspective projection
             this.camera.SetEffectParameters(effect);
             effect.Parameters["World"].SetValue(Matrix.CreateScale(10.0f));
+            // Set world inverse transpose.
+            //Matrix worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(mesh.ParentBone.Transform * world));
+            //effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
+            // Set the light source.
+            effect.Parameters["LightSource"].SetValue(new Vector3(-1, -1, -1));
+            // Set the color.
+            effect.Parameters["DiffuseColor"].SetValue(Color.Red.ToVector4());
             // Draw the model
             mesh.Draw();
 
