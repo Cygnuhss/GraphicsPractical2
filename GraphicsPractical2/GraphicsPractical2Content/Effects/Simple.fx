@@ -8,11 +8,23 @@
 
 // Matrices for 3D perspective projection 
 float4x4 View, Projection, World;
+// Matrix for inverse transpose of world. Used for correct normals calculations.
+float4x4 WorldInverseTranspose;
 
-// Position vector for the light source.
-float3 LightSource;
+// Variables for ambient lighting.
+float4 AmbientColor;
+float AmbientIntensity;
+
+// Variables for diffuse (Lambertian) lighting.
+float3 LightSourceDirection;
 float4 DiffuseColor;
 float DiffuseIntensity = 1.0;
+
+// Variables for specular (Phong) lighting.
+float4 SpecularColor;
+float SpecularIntensity;
+float SpecularPower;
+float3 viewVector = float3(1, 0, 0);
 
 //---------------------------------- Input / Output structures ----------------------------------
 
@@ -70,17 +82,18 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 
 	// Do the matrix multiplications for perspective projection and the world transform.
 	float4 worldPosition = mul(input.Position3D, World);
-		float4 viewPosition = mul(worldPosition, View);
-		output.Position2D = mul(viewPosition, Projection);
+	float4 viewPosition = mul(worldPosition, View);
+	output.Position2D = mul(viewPosition, Projection);
 
 	// Relay the input normals.
 	output.Normal = input.Normal;
 
 	// Extract the top-left of the world matrix.
 	float3x3 rotationAndScale = (float3x3) World;
-		float n = mul(input.Normal, rotationAndScale);
-	n = normalize(n);
-	float lightIntensity = max(0, dot(n, LightSource));
+	float normal = mul(input.Normal, rotationAndScale);
+	//float normal = mul(input.Normal, WorldInverseTranspose);
+	normal = normalize(normal);
+	float lightIntensity = max(0, dot(normal, LightSourceDirection));
 	output.Color = saturate(DiffuseColor * DiffuseIntensity * lightIntensity);
 
 	return output;
@@ -88,9 +101,18 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 
 float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 {
-	//float4 color = ProceduralColor(input.Normal);
-	float4 color = saturate(input.Color);
+	float3 light = normalize(LightSourceDirection);
+	float3 normal = normalize(input.Normal);
+	float3 r = normalize(2 * dot(light, normal) * normal - light);
+	float3 v = normalize(mul(normalize(viewVector), World));
 
+	float RdotV = dot(r, v);
+	float4 specular = SpecularIntensity * SpecularColor * max(pow(RdotV, SpecularPower), 0) * length(input.Color);
+
+	// Add the ambient and specular light to the already calculated diffuse light.
+	float4 color = saturate(input.Color + AmbientColor * AmbientIntensity + specular);
+
+	//float4 color = ProceduralColor(input.Normal);
 	return color;
 }
 

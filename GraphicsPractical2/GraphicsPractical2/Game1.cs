@@ -71,6 +71,21 @@ namespace GraphicsPractical2
             this.model.Meshes[0].MeshParts[0].Effect = effect;
             // Setup the quad
             this.setupQuad();
+            // Setup the material.
+            this.modelMaterial = new Material();
+            // Set the ambient color.
+            this.modelMaterial.AmbientColor = Color.Red;
+            // Set the ambient intensity.
+            this.modelMaterial.AmbientIntensity = 0.2f;
+            // Set the diffuse color.
+            this.modelMaterial.DiffuseColor = Color.Red;
+            // Set the specular color.
+            this.modelMaterial.SpecularColor = Color.White;
+            // Set the specular intensity.
+            this.modelMaterial.SpecularIntensity = 2.0f;
+            // Set the specular power.
+            this.modelMaterial.SpecularPower = 25.0f;
+
         }
 
         /// <summary>
@@ -124,14 +139,15 @@ namespace GraphicsPractical2
             effect.CurrentTechnique = effect.Techniques["Simple"];
             // Matrices for 3D perspective projection
             this.camera.SetEffectParameters(effect);
-            effect.Parameters["World"].SetValue(Matrix.CreateScale(10.0f));
+            Matrix world = Matrix.CreateScale(10.0f);
+            effect.Parameters["World"].SetValue(world);
             // Set world inverse transpose.
-            //Matrix worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(mesh.ParentBone.Transform * world));
-            //effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
+            Matrix worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(mesh.ParentBone.Transform * world));
+            effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
             // Set the light source.
-            effect.Parameters["LightSource"].SetValue(new Vector3(-1, -1, -1));
-            // Set the color.
-            effect.Parameters["DiffuseColor"].SetValue(Color.Red.ToVector4());
+            effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1, -1, -1));
+            // Set all the material parameters.
+            this.modelMaterial.SetEffectParameters(effect);
             // Draw the model
             mesh.Draw();
 
