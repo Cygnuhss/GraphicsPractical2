@@ -18,13 +18,14 @@ float AmbientIntensity;
 // Variables for diffuse (Lambertian) lighting.
 float3 LightSourceDirection;
 float4 DiffuseColor;
-float DiffuseIntensity = 1.0;
+// This intensity approaches the lighting as in the assignment.
+float DiffuseIntensity = 0.5;
 
 // Variables for specular (Phong) lighting.
 float4 SpecularColor;
 float SpecularIntensity;
 float SpecularPower;
-float3 viewVector = float3(1, 0, 0);
+float3 ViewVector;
 
 //---------------------------------- Input / Output structures ----------------------------------
 
@@ -90,10 +91,13 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 
 	// Extract the top-left of the world matrix.
 	float3x3 rotationAndScale = (float3x3) World;
-	float normal = mul(input.Normal, rotationAndScale);
-	//float normal = mul(input.Normal, WorldInverseTranspose);
+	float3 normal = mul(input.Normal, rotationAndScale);
+	//float3 normal = mul(input.Normal, WorldInverseTranspose);
 	normal = normalize(normal);
-	float lightIntensity = max(0, dot(normal, LightSourceDirection));
+	// The color is proportional to the angle between the surface normal and direction to the light source.
+	// Surfaces pointing away from the light do not receive any light.
+	float lightIntensity = max(0, dot(normal, -LightSourceDirection));
+	// Take the diffuse color and intensity into account.
 	output.Color = saturate(DiffuseColor * DiffuseIntensity * lightIntensity);
 
 	return output;
@@ -104,14 +108,15 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 	float3 light = normalize(LightSourceDirection);
 	float3 normal = normalize(input.Normal);
 	float3 r = normalize(2 * dot(light, normal) * normal - light);
-	float3 v = normalize(mul(normalize(viewVector), World));
+	float3 v = normalize(mul(normalize(ViewVector), World));
 
 	float RdotV = dot(r, v);
-	float4 specular = SpecularIntensity * SpecularColor * max(pow(RdotV, SpecularPower), 0) * length(input.Color);
+	float4 specular = SpecularIntensity * SpecularColor * max(pow(abs(RdotV), SpecularPower), 0) * length(input.Color);
 
 	// Add the ambient and specular light to the already calculated diffuse light.
 	float4 color = saturate(input.Color + AmbientColor * AmbientIntensity + specular);
 
+	//float4 color = NormalColor(input.Normal);
 	//float4 color = ProceduralColor(input.Normal);
 	return color;
 }
