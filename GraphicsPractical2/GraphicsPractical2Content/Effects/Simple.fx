@@ -58,8 +58,10 @@ struct VertexShaderOutput
 // Implement the Coloring using normals assignment here
 float4 NormalColor(float4 normal)
 {
+	// The output color is based on the normals. Alpha is set to 1.
 	float4 color = float4(normal.x, normal.y, normal.z, 1);
-		return float4(color);
+
+	return color;
 }
 
 // Implement the Procedural texturing assignment here
@@ -68,9 +70,11 @@ float4 ProceduralColor(float4 normal)
 	float4 color;
 	if (sin(normal.x) > 0)
 		//if (((int)(2 * normal.x) + (int)normal.y) & 1 > 0)
-		color = NormalColor(normal);
+		//color = NormalColor(normal);
+		color = float4(0, 0, 0, 1);
 	else
-		color = NormalColor(float4(-normal.x, -normal.y, -normal.z, -normal.w));
+		color = float4(1, 1, 1, 1);
+		//color = NormalColor(float4(-normal.x, -normal.y, -normal.z, -normal.w));
 	return color;
 }
 
@@ -118,6 +122,7 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 
 	//float4 color = NormalColor(input.Normal);
 	//float4 color = ProceduralColor(input.Normal);
+
 	return color;
 }
 

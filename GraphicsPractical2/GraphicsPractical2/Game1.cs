@@ -144,7 +144,7 @@ namespace GraphicsPractical2
             Matrix worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(mesh.ParentBone.Transform * world));
             effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
             // Set the light source.
-            effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1, -1, -1));
+            effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
             // Set the view direction.
             effect.Parameters["ViewVector"].SetValue(this.camera.Eye);
             // Set all the material parameters.
