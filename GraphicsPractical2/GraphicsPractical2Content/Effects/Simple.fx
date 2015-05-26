@@ -21,7 +21,7 @@ float4 DiffuseColor;
 // This intensity approaches the lighting as in the assignment.
 float DiffuseIntensity = 0.5;
 
-// Variables for specular (Phong) lighting.
+// Variables for specular (Blinn-Phong) lighting.
 float4 SpecularColor;
 float SpecularIntensity;
 float SpecularPower;
@@ -51,6 +51,8 @@ struct VertexShaderOutput
 	float4 Position2D : POSITION0;
 	float4 Color: COLOR0;
 	float4 Normal : TEXCOORD0;
+	// Storing the 3D position in TEXCOORD1, because the POSITION0 semantic cannot be used in the pixel shader.
+	float4 Position3D : TEXCOORD1;
 };
 
 //------------------------------------------ Functions ------------------------------------------
@@ -65,16 +67,21 @@ float4 NormalColor(float4 normal)
 }
 
 // Implement the Procedural texturing assignment here
-float4 ProceduralColor(float4 normal)
+float4 ProceduralColor(float4 normal, float4 position)
 {
 	float4 color;
-	if (sin(normal.x) > 0)
-		//if (((int)(2 * normal.x) + (int)normal.y) & 1 > 0)
-		//color = NormalColor(normal);
-		color = float4(0, 0, 0, 1);
+	// The width of the stripes is adjustable. A value between 0.05 and 1.0 is recommended.
+	// In case of a checkerboard pattern, this is the square size.
+	float stripeWidth = 0.25f;
+	// Use this line to create a vertical stripe pattern.
+	//if (sin((Pi * position.x) / stripeWidth) > 0)
+	// Use these lines to create a checkerboard pattern.
+	int i = (int)(position.x / stripeWidth) + (int)(position.y / stripeWidth);
+	if (fmod(i, 2) == 0)
+	//if (((int)(2 * position.x) + (int)position.y) & 1 > 0)
+		color = NormalColor(normal);
 	else
-		color = float4(1, 1, 1, 1);
-		//color = NormalColor(float4(-normal.x, -normal.y, -normal.z, -normal.w));
+		color = NormalColor(float4(-normal.x, -normal.y, -normal.z, -normal.w));
 	return color;
 }
 
@@ -93,6 +100,11 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 	// Relay the input normals.
 	output.Normal = input.Normal;
 
+	// Use these two lines for NormalColor and ProceduralColor, comment out otherwise.
+	//output.Color = input.Normal;
+	// Relay the POSITION0 information to the TEXCOORD1 semantic, for use in the pixel shader.
+	//output.Position3D = input.Position3D;
+
 	// Extract the top-left of the world matrix.
 	float3x3 rotationAndScale = (float3x3) World;
 	float3 normal = mul(input.Normal, rotationAndScale);
@@ -109,19 +121,31 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 
 float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 {
-	float3 light = normalize(LightSourceDirection);
-	float3 normal = normalize(input.Normal);
-	float3 r = normalize(2 * dot(light, normal) * normal - light);
+	// Use these two for NormalColor and ProceduralColor, comment out otherwise.
+	//float4 color = NormalColor(input.Normal);
+	//float4 color = ProceduralColor(input.Normal, input.Position3D);
+
+	// The ambient color is the same everywhere: a predefined color at a certain intensity.
+	float4 ambient = AmbientColor * AmbientIntensity;
+
+	// The light vector l is the direction from the location to the light.
+	float3 l = normalize(-LightSourceDirection);
+	// The normal vector n denotes the normal of the surface.
+	float3 n = normalize(input.Normal);
+	// Calculate the half vector, which is the bisector of the angle between the view vector v and light vector l.
+	float3 h = normalize(l + ViewVector);
+	float4 specular = SpecularColor * SpecularIntensity * pow(max(0, dot(n, h)), SpecularPower);
+	/*
+	???Failing code??? Deprecated
+	float3 r = normalize(2 * dot(light, normal) * normal + light);
 	float3 v = normalize(mul(normalize(ViewVector), World));
 
 	float RdotV = dot(r, v);
 	float4 specular = SpecularIntensity * SpecularColor * max(pow(abs(RdotV), SpecularPower), 0) * length(input.Color);
+	*/
 
 	// Add the ambient and specular light to the already calculated diffuse light.
-	float4 color = saturate(input.Color + AmbientColor * AmbientIntensity + specular);
-
-	//float4 color = NormalColor(input.Normal);
-	//float4 color = ProceduralColor(input.Normal);
+	float4 color = saturate(input.Color + ambient + specular);
 
 	return color;
 }

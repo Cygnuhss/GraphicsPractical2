@@ -146,7 +146,8 @@ namespace GraphicsPractical2
             // Set the light source.
             effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
             // Set the view direction.
-            effect.Parameters["ViewVector"].SetValue(this.camera.Eye);
+            Vector3 view = new Vector3(this.camera.ViewMatrix.M13, this.camera.ViewMatrix.M23, this.camera.ViewMatrix.M33);
+            effect.Parameters["ViewVector"].SetValue(view);
             // Set all the material parameters.
             this.modelMaterial.SetEffectParameters(effect);
             // Draw the model
