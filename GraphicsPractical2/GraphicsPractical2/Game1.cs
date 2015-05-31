@@ -30,6 +30,11 @@ namespace GraphicsPractical2
         private short[] quadIndices;
         private Matrix quadTransform;
 
+        // Quad texture
+        private Texture2D quadTexture;
+        // Quad normal map
+        private Texture2D quadNormalMap;
+
         public Game1()
         {
             this.graphics = new GraphicsDeviceManager(this);
@@ -62,14 +67,14 @@ namespace GraphicsPractical2
 
         protected override void LoadContent()
         {
-            // Create a SpriteBatch object
+            // Create a SpriteBatch object.
             this.spriteBatch = new SpriteBatch(this.GraphicsDevice);
-            // Load the "Simple" effect
+            // Load the "Simple" effect.
             Effect effect = this.Content.Load<Effect>("Effects/Simple");
-            // Load the model and let it use the "Simple" effect
+            // Load the model and let it use the "Simple" effect.
             this.model = this.Content.Load<Model>("Models/Teapot");
             this.model.Meshes[0].MeshParts[0].Effect = effect;
-            // Setup the quad
+            // Setup the quad.
             this.setupQuad();
             // Setup the material.
             this.modelMaterial = new Material();
@@ -84,7 +89,9 @@ namespace GraphicsPractical2
             // Set the specular intensity.
             this.modelMaterial.SpecularIntensity = 2.0f;
             // Set the specular power.
-            this.modelMaterial.SpecularPower = 25.0f;
+            this.modelMaterial.SpecularPower = 2.50f;
+            // Do not set a texture for the model.
+            this.modelMaterial.DiffuseTexture = null;
         }
 
         /// <summary>
@@ -113,6 +120,9 @@ namespace GraphicsPractical2
 
             this.quadIndices = new short[] { 0, 1, 2, 1, 2, 3 };
             this.quadTransform = Matrix.CreateScale(scale);
+
+            // Setup the quad texture.
+            this.quadTexture = this.Content.Load<Texture2D>("Textures/CobblestonesDiffuse");
         }
 
         protected override void Update(GameTime gameTime)

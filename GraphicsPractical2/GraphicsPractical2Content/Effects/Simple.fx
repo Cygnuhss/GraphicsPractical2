@@ -27,6 +27,18 @@ float SpecularIntensity;
 float SpecularPower;
 float3 ViewVector;
 
+// Variables for texturing.
+texture DiffuseTexture;
+bool HasTexture;
+sampler2D textureSampler = sampler_state
+{
+	Texture = (DiffuseTexture);
+	MinFilter = Linear;
+	MagFilter = Linear;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
+
 //---------------------------------- Input / Output structures ----------------------------------
 
 // Each member of the struct has to be given a "semantic", to indicate what kind of data should go in
@@ -36,6 +48,7 @@ struct VertexShaderInput
 {
 	float4 Position3D : POSITION0;
 	float4 Normal : NORMAL0;
+	float2 TextureCoordinate : TEXCOORD0;
 };
 
 // The output of the vertex shader. After being passed through the interpolator/rasterizer it is also 
@@ -51,8 +64,9 @@ struct VertexShaderOutput
 	float4 Position2D : POSITION0;
 	float4 Color: COLOR0;
 	float4 Normal : TEXCOORD0;
-	// Storing the 3D position in TEXCOORD1, because the POSITION0 semantic cannot be used in the pixel shader.
-	float4 Position3D : TEXCOORD1;
+	float2 TextureCoordinate: TEXCOORD1;
+	// Storing the 3D position in TEXCOORD2, because the POSITION0 semantic cannot be used in the pixel shader.
+	float4 Position3D : TEXCOORD2;
 };
 
 //------------------------------------------ Functions ------------------------------------------
@@ -99,6 +113,8 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 
 	// Relay the input normals.
 	output.Normal = input.Normal;
+	// Relay the texture coordinates.
+	output.TextureCoordinate = input.TextureCoordinate;
 
 	// Use these two lines for NormalColor and ProceduralColor, comment out otherwise.
 	//output.Color = input.Normal;
@@ -144,7 +160,15 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 	float4 specular = SpecularIntensity * SpecularColor * max(pow(abs(RdotV), SpecularPower), 0) * length(input.Color);
 	*/
 
-	// Add the ambient and specular light to the already calculated diffuse light.
+	// Sample the texture colors with no transparency and blend with the diffuse light.
+	if (HasTexture)
+	{
+		float4 textureColor = tex2D(textureSampler, input.TextureCoordinate);
+		textureColor.a = 1;
+		input.Color = input.Color * textureColor;
+	}
+
+	// Add the ambient and specular light to the already calculated diffuse light and texture.
 	float4 color = saturate(input.Color + ambient + specular);
 
 	return color;
