@@ -30,10 +30,9 @@ namespace GraphicsPractical2
         private short[] quadIndices;
         private Matrix quadTransform;
 
-        // Quad texture
-        private Texture2D quadTexture;
-        // Quad normal map
-        private Texture2D quadNormalMap;
+        // Quad effect and material
+        private Effect quadEffect;
+        private Material quadMaterial;
 
         public Game1()
         {
@@ -89,7 +88,7 @@ namespace GraphicsPractical2
             // Set the specular intensity.
             this.modelMaterial.SpecularIntensity = 2.0f;
             // Set the specular power.
-            this.modelMaterial.SpecularPower = 2.50f;
+            this.modelMaterial.SpecularPower = 2.5f;
             // Do not set a texture for the model.
             this.modelMaterial.DiffuseTexture = null;
         }
@@ -121,8 +120,25 @@ namespace GraphicsPractical2
             this.quadIndices = new short[] { 0, 1, 2, 1, 2, 3 };
             this.quadTransform = Matrix.CreateScale(scale);
 
-            // Setup the quad texture.
-            this.quadTexture = this.Content.Load<Texture2D>("Textures/CobblestonesDiffuse");
+            // Load the "Simple" effect as a quad effect.
+            this.quadEffect = this.Content.Load<Effect>("Effects/Simple");
+
+            // Setup the material.
+            this.quadMaterial = new Material();
+            // Set the ambient color.
+            this.quadMaterial.AmbientColor = Color.White;
+            // Set the ambient intensity.
+            this.quadMaterial.AmbientIntensity = 0.0f;
+            // Set the diffuse color.
+            this.quadMaterial.DiffuseColor = Color.White;
+            // Set the specular color.
+            this.quadMaterial.SpecularColor = Color.White;
+            // Set the specular intensity.
+            this.quadMaterial.SpecularIntensity = 0.0f;
+            // Set the specular power.
+            this.quadMaterial.SpecularPower = 0.0f;
+            // Set the quad texture.
+            this.quadMaterial.DiffuseTexture = this.Content.Load<Texture2D>("Textures/CobblestonesDiffuse");
         }
 
         protected override void Update(GameTime gameTime)
@@ -156,12 +172,48 @@ namespace GraphicsPractical2
             // Set the light source.
             effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
             // Set the view direction.
-            Vector3 view = new Vector3(this.camera.ViewMatrix.M13, this.camera.ViewMatrix.M23, this.camera.ViewMatrix.M33);
+            Vector3 view = this.camera.Focus;
+            //Vector3 view = new Vector3(this.camera.ViewMatrix.M13, this.camera.ViewMatrix.M23, this.camera.ViewMatrix.M33);
             effect.Parameters["ViewVector"].SetValue(view);
             // Set all the material parameters.
             this.modelMaterial.SetEffectParameters(effect);
+
+            /*
+            this.GraphicsDevice.RasterizerState = new RasterizerState
+            {
+                CullMode = CullMode.None,
+                FillMode = FillMode.Solid
+            };*/
+
             // Draw the model
             mesh.Draw();
+
+            // Set the effect parameters
+            quadEffect.CurrentTechnique = quadEffect.Techniques["Simple"];
+            // Matrices for 3D perspective projection
+            this.camera.SetEffectParameters(quadEffect);
+            quadEffect.Parameters["World"].SetValue(this.quadTransform);
+            // Set world inverse transpose.
+            Matrix worldInverseTransposeMatrix2 = Matrix.Transpose(Matrix.Invert(this.quadTransform));
+            quadEffect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
+            // Set the light source.
+            quadEffect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
+            // Set the view direction.
+            Vector3 view2 = this.camera.Focus;
+            //Vector3 view = new Vector3(this.camera.ViewMatrix.M13, this.camera.ViewMatrix.M23, this.camera.ViewMatrix.M33);
+            quadEffect.Parameters["ViewVector"].SetValue(view);
+
+            // Set all the quad material parameters.
+            this.quadMaterial.SetEffectParameters(quadEffect);
+
+            foreach (EffectPass pass in quadEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+            }
+
+            // Draw the ground texture.
+            this.GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, this.quadVertices.Length, 0,
+                this.quadIndices.Length / 3);
 
             base.Draw(gameTime);
         }
