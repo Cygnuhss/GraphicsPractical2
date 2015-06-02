@@ -33,6 +33,10 @@ namespace GraphicsPractical2
         // Quad material
         private Material quadMaterial;
 
+        // Gamma correction
+        private Effect gammaEffect;
+        private RenderTarget2D renderTarget;
+
         public Game1()
         {
             this.graphics = new GraphicsDeviceManager(this);
@@ -60,6 +64,15 @@ namespace GraphicsPractical2
 
             this.IsMouseVisible = true;
 
+            // Set the render target.
+            renderTarget = new RenderTarget2D(
+                GraphicsDevice,
+                GraphicsDevice.PresentationParameters.BackBufferWidth,
+                GraphicsDevice.PresentationParameters.BackBufferHeight,
+                false,
+                GraphicsDevice.PresentationParameters.BackBufferFormat,
+                DepthFormat.Depth24);
+
             base.Initialize();
         }
 
@@ -72,8 +85,10 @@ namespace GraphicsPractical2
             // Load the model and let it use the "Simple" effect.
             this.model = this.Content.Load<Model>("Models/Teapot");
             this.model.Meshes[0].MeshParts[0].Effect = effect;
+
             // Setup the quad.
             this.setupQuad();
+
             // Setup the material.
             this.modelMaterial = new Material();
             // Set the ambient color.
@@ -90,6 +105,12 @@ namespace GraphicsPractical2
             this.modelMaterial.SpecularPower = 25.0f;
             // Do not set a texture for the model.
             this.modelMaterial.DiffuseTexture = null;
+            // Disable the normal and procedural coloring.
+            this.modelMaterial.NormalColoring = false;
+            this.modelMaterial.ProceduralColoring = false;
+
+            // Load the "PostProcessing" effect.
+            gammaEffect = Content.Load<Effect>("Effects/PostProcessing");
         }
 
         /// <summary>
@@ -106,18 +127,22 @@ namespace GraphicsPractical2
             // Top left
             this.quadVertices[0].Position = new Vector3(-1, 0, -1);
             this.quadVertices[0].Normal = quadNormal;
+            this.quadVertices[0].TextureCoordinate = new Vector2(0.0f, 0.0f);
             // Top right
             this.quadVertices[1].Position = new Vector3(1, 0, -1);
             this.quadVertices[1].Normal = quadNormal;
+            this.quadVertices[1].TextureCoordinate = new Vector2(1.0f, 0.0f);
             // Bottom left
             this.quadVertices[2].Position = new Vector3(-1, 0, 1);
             this.quadVertices[2].Normal = quadNormal;
+            this.quadVertices[2].TextureCoordinate = new Vector2(0.0f, 1.0f);
             // Bottom right
             this.quadVertices[3].Position = new Vector3(1, 0, 1);
             this.quadVertices[3].Normal = quadNormal;
+            this.quadVertices[3].TextureCoordinate = new Vector2(1.0f, 1.0f);
 
             this.quadIndices = new short[] { 0, 1, 2, 1, 2, 3 };
-            this.quadTransform = Matrix.CreateScale(scale);           
+            this.quadTransform = Matrix.CreateScale(scale);
 
             // Setup the material.
             this.quadMaterial = new Material();
@@ -135,6 +160,9 @@ namespace GraphicsPractical2
             this.quadMaterial.SpecularPower = 0.0f;
             // Set the quad texture.
             this.quadMaterial.DiffuseTexture = this.Content.Load<Texture2D>("Textures/CobblestonesDiffuse");
+            // Disable the normal and procedural coloring.
+            this.quadMaterial.NormalColoring = false;
+            this.quadMaterial.ProceduralColoring = false;
         }
 
         protected override void Update(GameTime gameTime)
@@ -148,6 +176,27 @@ namespace GraphicsPractical2
         }
 
         protected override void Draw(GameTime gameTime)
+        {
+            DrawSceneToTexture(renderTarget);
+
+            GraphicsDevice.Clear(Color.Black);
+
+            // Set the gamma value.
+            // A value of 1.5 is used in the screenshot for gamma correction, 1.0 is used to apply
+            // no correction.
+            gammaEffect.Parameters["Gamma"].SetValue(1.0f);
+            // Apply gamma correction.
+            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque,
+                        SamplerState.LinearClamp, DepthStencilState.Default,
+                        RasterizerState.CullNone, gammaEffect);
+
+            spriteBatch.Draw(renderTarget, new Rectangle(GraphicsDevice.Viewport.X, GraphicsDevice.Viewport.Y, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height), Color.White);
+            spriteBatch.End();
+
+            base.Draw(gameTime);
+        }
+
+        protected void DrawScene()
         {
             // Clear the screen in a predetermined color and clear the depth buffer
             this.GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.DeepSkyBlue, 1.0f, 0);
@@ -171,17 +220,10 @@ namespace GraphicsPractical2
             // Set the light source.
             effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
             // Set the view direction.
-            Vector3 view =  this.camera.Focus;
-            effect.Parameters["ViewVector"].SetValue(view);
+            Vector3 view = this.camera.Eye;
+            effect.Parameters["EyePos"].SetValue(view);
             // Set all the material parameters.
             this.modelMaterial.SetEffectParameters(effect);
-
-            /*
-            this.GraphicsDevice.RasterizerState = new RasterizerState
-            {
-                CullMode = CullMode.None,
-                FillMode = FillMode.Solid
-            };*/
 
             // Draw the model
             mesh.Draw();
@@ -190,26 +232,39 @@ namespace GraphicsPractical2
             effect.CurrentTechnique = effect.Techniques["Simple"];
             // Matrices for 3D perspective projection
             this.camera.SetEffectParameters(effect);
-            effect.Parameters["World"].SetValue(this.quadTransform);
+            effect.Parameters["World"].SetValue(world);
             // Set world inverse transpose.
-            worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(this.quadTransform));
+            worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(this.quadTransform * world));
             effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
             // Set the light source.
-            effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));            
+            effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
 
             // Set all the quad material parameters.
             this.quadMaterial.SetEffectParameters(effect);
 
+            // Draw the ground texture.
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)
             {
                 pass.Apply();
+
+                this.GraphicsDevice.DrawUserIndexedPrimitives<VertexPositionNormalTexture>(PrimitiveType.TriangleList,
+                    this.quadVertices, 0, this.quadVertices.Length,
+                    this.quadIndices, 0, this.quadIndices.Length / 3);
             }
+        }
 
-            // Draw the ground texture.
-            this.GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, this.quadVertices.Length, 0,
-                this.quadIndices.Length / 3);
+        protected void DrawSceneToTexture(RenderTarget2D renderTarget)
+        {
+            // Set the render target.
+            GraphicsDevice.SetRenderTarget(renderTarget);
 
-            base.Draw(gameTime);
+            GraphicsDevice.DepthStencilState = new DepthStencilState() { DepthBufferEnable = true };
+
+            // Draw the scene.
+            DrawScene();
+
+            // Drop the render target.
+            GraphicsDevice.SetRenderTarget(null);
         }
     }
 }

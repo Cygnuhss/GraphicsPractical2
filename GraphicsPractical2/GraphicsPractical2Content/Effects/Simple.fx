@@ -25,11 +25,11 @@ float DiffuseIntensity = 0.5;
 float4 SpecularColor;
 float SpecularIntensity;
 float SpecularPower;
-float3 ViewVector;
+float3 EyePos;
 
 // Variables for texturing.
-texture DiffuseTexture;
 bool HasTexture;
+texture DiffuseTexture;
 sampler2D textureSampler = sampler_state
 {
 	Texture = (DiffuseTexture);
@@ -39,6 +39,10 @@ sampler2D textureSampler = sampler_state
 	AddressV = Clamp;
 };
 
+// Variables for extra coloring functions.
+bool NormalColoring;
+bool ProceduralColoring;
+
 //---------------------------------- Input / Output structures ----------------------------------
 
 // Each member of the struct has to be given a "semantic", to indicate what kind of data should go in
@@ -46,7 +50,7 @@ sampler2D textureSampler = sampler_state
 // the MSDN library
 struct VertexShaderInput
 {
-	float4 Position3D : POSITION0;
+	float4 Position : POSITION0;
 	float4 Normal : NORMAL0;
 	float2 TextureCoordinate : TEXCOORD0;
 };
@@ -61,17 +65,16 @@ struct VertexShaderInput
 // Note 2: You cannot use the data with the POSITION0 semantic in the pixel shader.
 struct VertexShaderOutput
 {
-	float4 Position2D : POSITION0;
+	float4 Position : POSITION0;
 	float4 Color: COLOR0;
-	float4 Normal : TEXCOORD0;
-	float2 TextureCoordinate: TEXCOORD1;
+	float2 TextureCoordinate: TEXCOORD0;
+	float4 Normal : TEXCOORD1;
 	// Storing the 3D position in TEXCOORD2, because the POSITION0 semantic cannot be used in the pixel shader.
-	float4 Position3D : TEXCOORD2;
+	float3 WorldPos : TEXCOORD2;
 };
 
 //------------------------------------------ Functions ------------------------------------------
 
-// Implement the Coloring using normals assignment here
 float4 NormalColor(float4 normal)
 {
 	// The output color is based on the normals. Alpha is set to 1.
@@ -80,22 +83,25 @@ float4 NormalColor(float4 normal)
 	return color;
 }
 
-// Implement the Procedural texturing assignment here
-float4 ProceduralColor(float4 normal, float4 position)
+float4 ProceduralColor(float4 normal, float3 position)
 {
 	float4 color;
 	// The width of the stripes is adjustable. A value between 0.05 and 1.0 is recommended.
 	// In case of a checkerboard pattern, this is the square size.
 	float stripeWidth = 0.25f;
-	// Use this line to create a vertical stripe pattern.
+	// Use this test to create a vertical stripe pattern.
 	//if (sin((Pi * position.x) / stripeWidth) > 0)
-	// Use these lines to create a checkerboard pattern.
+	// Use this test to create a checkerboard pattern.
 	if (sin((Pi * position.x) / stripeWidth) > 0
 		!= sin((Pi * position.y) / stripeWidth) > 0)
-
+	{
 		color = NormalColor(normal);
+	}
 	else
-		color = NormalColor(float4(-normal.x, -normal.y, -normal.z, -normal.w));
+	{
+		color = NormalColor(-normal);
+	}
+
 	return color;
 }
 
@@ -107,24 +113,26 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
 	// Do the matrix multiplications for perspective projection and the world transform.
-	float4 worldPosition = mul(input.Position3D, World);
+	float4 worldPosition = mul(input.Position, World);
 	float4 viewPosition = mul(worldPosition, View);
-	output.Position2D = mul(viewPosition, Projection);
+	output.Position = mul(viewPosition, Projection);
 
 	// Relay the input normals.
 	output.Normal = input.Normal;
 	// Relay the texture coordinates.
 	output.TextureCoordinate = input.TextureCoordinate;
 
-	// Use these two lines for NormalColor and ProceduralColor, comment out otherwise.
-	//output.Color = input.Normal;
-	// Relay the POSITION0 information to the TEXCOORD1 semantic, for use in the pixel shader.
-	//output.Position3D = input.Position3D;
+	// Use this line for NormalColor and ProceduralColor. Leaving it will not cause harm, as the color
+	// will later be overridden by the diffuse color.
+	output.Color = input.Normal;
+	// Relay the POSITION0 information to the TEXCOORD2 semantic, for use in the pixel shader.
+	output.WorldPos = input.Position;
 
 	// Extract the top-left of the world matrix.
-	float3x3 rotationAndScale = (float3x3) World;
-	float3 normal = mul(input.Normal, rotationAndScale);
-	//float3 normal = mul(input.Normal, WorldInverseTranspose);
+	//float3x3 rotationAndScale = (float3x3) World;
+	//float3 normal = mul(input.Normal, rotationAndScale);
+	// Use this line instead of the above two to correctly handle the normals with non-uniform scaling.
+	float3 normal = mul(input.Normal, WorldInverseTranspose);
 	normal = normalize(normal);
 	// The color is proportional to the angle between the surface normal and direction to the light source.
 	// Surfaces pointing away from the light do not receive any light.
@@ -137,32 +145,45 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 
 float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 {
-	// Use these two for NormalColor and ProceduralColor, comment out otherwise.
-	//float4 color = NormalColor(input.Normal);
-	//float4 color = ProceduralColor(input.Normal, input.Position3D);
+	float4 color;
 
-	// The ambient color is the same everywhere: a predefined color at a certain intensity.
-	float4 ambient = AmbientColor * AmbientIntensity;
-
-	// The light vector l is the direction from the location to the light.
-	float3 l = -LightSourceDirection;
-	// The normal vector n denotes the normal of the surface.
-	float3 n = input.Normal;
-	// Calculate the half vector, which is the bisector of the angle between the view vector v and light vector l.
-	float3 h = normalize(l + ViewVector);
-	float4 specular = SpecularColor * SpecularIntensity * pow(max(0, dot(n, h)), SpecularPower);
-	
-
-	// Sample the texture colors with no transparency and blend with the diffuse light.
-	if (HasTexture)
+	// Use the normal coloring if this parameter is set.
+	if (NormalColoring)
 	{
-		float4 textureColor = tex2D(textureSampler, input.TextureCoordinate);
-		textureColor.a = 1;
-		input.Color = input.Color * textureColor;
+		color = NormalColor(input.Normal);
 	}
+	// Use the procedural coloring if this parameter is set.
+	else if (ProceduralColoring)
+	{
+		color = ProceduralColor(input.Normal, input.WorldPos);
+	}
+	// Use the normal lighting otherwise.
+	else
+	{
+		// The ambient color is the same everywhere: a predefined color at a certain intensity.
+		float4 ambient = AmbientColor * AmbientIntensity;
 
-	// Add the ambient and specular light to the already calculated diffuse light and texture.
-	float4 color = saturate(input.Color + ambient +specular);
+		// The light vector l is the direction from the location to the light.
+		float3 l = -LightSourceDirection;
+		// The normal vector n denotes the normal of the surface.
+		float3 n = input.Normal;
+		// The view vector v is the vector from the camera to the fragment.
+		float3 v = normalize(EyePos - input.WorldPos);
+		// Calculate the half vector, which is the bisector of the angle between the view vector v and light vector l.
+		float3 h = normalize(v + l);
+		float4 specular = SpecularColor * SpecularIntensity * pow(saturate(dot(n, h)), SpecularPower);
+
+		// Sample the texture colors with no transparency and blend with the diffuse light.
+		if (HasTexture)
+		{
+			float4 textureColor = tex2D(textureSampler, input.TextureCoordinate);
+				textureColor.a = 1;
+			input.Color = input.Color * textureColor;
+		}
+
+		// Add the ambient and specular light to the already calculated diffuse light and texture.
+		color = saturate(input.Color + ambient + specular);
+	}
 
 	return color;
 }
@@ -175,8 +196,3 @@ technique Simple
 		PixelShader = compile ps_2_0 SimplePixelShader();
 	}
 }
-
-technique Lambert
-{
-	
-};

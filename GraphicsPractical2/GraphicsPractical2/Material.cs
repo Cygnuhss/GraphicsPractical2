@@ -50,8 +50,8 @@ namespace GraphicsPractical2
             effect.Parameters["SpecularColor"].SetValue(this.SpecularColor.ToVector4());
             effect.Parameters["SpecularIntensity"].SetValue(this.SpecularIntensity);
             effect.Parameters["SpecularPower"].SetValue(this.SpecularPower);
-            //effect.Parameters["NormalColoring"].SetValue(this.NormalColoring);
-            //effect.Parameters["ProceduralColoring"].SetValue(this.ProceduralColoring);
+            effect.Parameters["NormalColoring"].SetValue(this.NormalColoring);
+            effect.Parameters["ProceduralColoring"].SetValue(this.ProceduralColoring);
 
             effect.Parameters["HasTexture"].SetValue(this.DiffuseTexture != null);
             //effect.Parameters["HasNormalMap"].SetValue(this.NormalMap != null);
