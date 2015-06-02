@@ -90,9 +90,9 @@ float4 ProceduralColor(float4 normal, float4 position)
 	// Use this line to create a vertical stripe pattern.
 	//if (sin((Pi * position.x) / stripeWidth) > 0)
 	// Use these lines to create a checkerboard pattern.
-	int i = (int)(position.x / stripeWidth) + (int)(position.y / stripeWidth);
-	if (fmod(i, 2) == 0)
-	//if (((int)(2 * position.x) + (int)position.y) & 1 > 0)
+	if (sin((Pi * position.x) / stripeWidth) > 0
+		!= sin((Pi * position.y) / stripeWidth) > 0)
+
 		color = NormalColor(normal);
 	else
 		color = NormalColor(float4(-normal.x, -normal.y, -normal.z, -normal.w));
@@ -117,9 +117,9 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 	output.TextureCoordinate = input.TextureCoordinate;
 
 	// Use these two lines for NormalColor and ProceduralColor, comment out otherwise.
-	//output.Color = input.Normal;
+	output.Color = input.Normal;
 	// Relay the POSITION0 information to the TEXCOORD1 semantic, for use in the pixel shader.
-	//output.Position3D = input.Position3D;
+	output.Position3D = input.Position3D;
 
 	// Extract the top-left of the world matrix.
 	float3x3 rotationAndScale = (float3x3) World;
@@ -139,7 +139,7 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 {
 	// Use these two for NormalColor and ProceduralColor, comment out otherwise.
 	//float4 color = NormalColor(input.Normal);
-	//float4 color = ProceduralColor(input.Normal, input.Position3D);
+	float4 color = ProceduralColor(input.Normal, input.Position3D);
 
 	// The ambient color is the same everywhere: a predefined color at a certain intensity.
 	float4 ambient = AmbientColor * AmbientIntensity;
@@ -151,14 +151,7 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 	// Calculate the half vector, which is the bisector of the angle between the view vector v and light vector l.
 	float3 h = normalize(l + ViewVector);
 	float4 specular = SpecularColor * SpecularIntensity * pow(max(0, dot(n, h)), SpecularPower);
-	/*
-	???Failing code??? Deprecated
-	float3 r = normalize(2 * dot(light, normal) * normal + light);
-	float3 v = normalize(mul(normalize(ViewVector), World));
-
-	float RdotV = dot(r, v);
-	float4 specular = SpecularIntensity * SpecularColor * max(pow(abs(RdotV), SpecularPower), 0) * length(input.Color);
-	*/
+	
 
 	// Sample the texture colors with no transparency and blend with the diffuse light.
 	if (HasTexture)
@@ -169,7 +162,7 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 	}
 
 	// Add the ambient and specular light to the already calculated diffuse light and texture.
-	float4 color = saturate(input.Color + ambient + specular);
+	//float4 color = saturate(input.Color + ambient + specular);
 
 	return color;
 }
