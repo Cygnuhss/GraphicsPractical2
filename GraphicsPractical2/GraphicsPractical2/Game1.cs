@@ -213,7 +213,7 @@ namespace GraphicsPractical2
             Matrix scale = Matrix.CreateScale(new Vector3(10.0f, 6.5f, 2.5f));
             // Uniform scale.
             Matrix world = Matrix.CreateScale(10.0f);
-            effect.Parameters["World"].SetValue(world);
+            effect.Parameters["World"].SetValue(scale);
             // Set world inverse transpose.
             Matrix worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(mesh.ParentBone.Transform * world));
             effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
@@ -227,7 +227,7 @@ namespace GraphicsPractical2
 
             // Draw the model
             mesh.Draw();
-
+            /*
             // Set the effect parameters
             effect.CurrentTechnique = effect.Techniques["Simple"];
             // Matrices for 3D perspective projection
@@ -238,7 +238,7 @@ namespace GraphicsPractical2
             effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
             // Set the light source.
             effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
-
+            */
             // Set all the quad material parameters.
             this.quadMaterial.SetEffectParameters(effect);
 
@@ -247,7 +247,7 @@ namespace GraphicsPractical2
             {
                 pass.Apply();
 
-                this.GraphicsDevice.DrawUserIndexedPrimitives<VertexPositionNormalTexture>(PrimitiveType.TriangleList,
+                this.GraphicsDevice.DrawUserIndexedPrimitives(PrimitiveType.TriangleList,
                     this.quadVertices, 0, this.quadVertices.Length,
                     this.quadIndices, 0, this.quadIndices.Length / 3);
             }

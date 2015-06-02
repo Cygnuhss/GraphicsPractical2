@@ -129,10 +129,10 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 	output.WorldPos = input.Position;
 
 	// Extract the top-left of the world matrix.
-	//float3x3 rotationAndScale = (float3x3) World;
-	//float3 normal = mul(input.Normal, rotationAndScale);
+	float3x3 rotationAndScale = (float3x3) World;
+	float3 normal = mul(input.Normal, rotationAndScale);
 	// Use this line instead of the above two to correctly handle the normals with non-uniform scaling.
-	float3 normal = mul(input.Normal, WorldInverseTranspose);
+	//float3 normal = mul(input.Normal, WorldInverseTranspose);
 	normal = normalize(normal);
 	// The color is proportional to the angle between the surface normal and direction to the light source.
 	// Surfaces pointing away from the light do not receive any light.
@@ -177,7 +177,7 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 		if (HasTexture)
 		{
 			float4 textureColor = tex2D(textureSampler, input.TextureCoordinate);
-				textureColor.a = 1;
+			textureColor.a = 1;
 			input.Color = input.Color * textureColor;
 		}
 
