@@ -81,7 +81,7 @@ float4 NormalColor(float4 normal)
 	// The output color is based on the normals. Alpha is set to 1.
 	float4 color = float4(normal.x, normal.y, normal.z, 1);
 
-		return color;
+	return color;
 }
 
 float4 ProceduralColor(float4 normal, float3 position)
@@ -115,8 +115,8 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 
 	// Do the matrix multiplications for perspective projection and the world transform.
 	float4 worldPosition = mul(input.Position, World);
-		float4 viewPosition = mul(worldPosition, View);
-		output.Position = mul(viewPosition, Projection);
+	float4 viewPosition = mul(worldPosition, View);
+	output.Position = mul(viewPosition, Projection);
 
 	// Relay the input normals.
 	output.Normal = input.Normal;
@@ -130,11 +130,11 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 	output.WorldPos = input.Position;
 
 	// Extract the top-left of the world matrix.
-	float3x3 rotationAndScale = (float3x3) World;
-		float3 normal = mul(input.Normal, rotationAndScale);
-		// Use this line instead of the above two to correctly handle the normals with non-uniform scaling.
-		//float3 normal = mul(input.Normal, WorldInverseTranspose);
-		normal = normalize(normal);
+	//float3x3 rotationAndScale = (float3x3) World;
+	//float3 normal = mul(input.Normal, rotationAndScale);
+	// Use this line instead of the above two to correctly handle the normals with non-uniform scaling.
+	float3 normal = mul(input.Normal, WorldInverseTranspose);
+	normal = normalize(normal);
 	// The color is proportional to the angle between the surface normal and direction to the light source.
 	// Surfaces pointing away from the light do not receive any light.
 	float lightIntensity = max(0, dot(normal, -LightSourceDirection));
@@ -174,8 +174,6 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 		float3 h = normalize(v + l);
 		float4 specular = SpecularColor * SpecularIntensity * pow(saturate(dot(n, h)), SpecularPower);
 
-
-
 		// Add the ambient and specular light to the already calculated diffuse light and texture.
 		color = saturate(input.Color + ambient + specular);
 	}
@@ -190,8 +188,8 @@ VertexShaderOutput QuadVertexShader(VertexShaderInput input)
 
 	// Do the matrix multiplications for perspective projection and the world transform.
 	float4 worldPosition = mul(input.Position, QuadWorld);
-		float4 viewPosition = mul(worldPosition, View);
-		output.Position = mul(viewPosition, Projection);
+	float4 viewPosition = mul(worldPosition, View);
+	output.Position = mul(viewPosition, Projection);
 
 	// Relay the input normals.
 	output.Normal = input.Normal;

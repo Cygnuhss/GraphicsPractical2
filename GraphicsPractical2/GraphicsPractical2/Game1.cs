@@ -231,10 +231,13 @@ namespace GraphicsPractical2
 
             // Draw the model
             mesh.Draw();
+
+            // Set all the quad material parameters.
             this.quadMaterial.SetEffectParameters(effect);
             effect.CurrentTechnique = effect.Techniques["Quadshader"];
             effect.Parameters["QuadWorld"].SetValue(Matrix.CreateScale(50));
             effect.Parameters["HasTexture"].SetValue(true);
+
             // Draw the ground texture.
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)
             {
