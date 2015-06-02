@@ -20,22 +20,34 @@ Jelmer implemented the bonus assignment 4.1 on his own, out of curiosity.
 -------------------------
 
 1.1 Coloring using normals 			- Done
-1.2 Checkerboard pattern 			- Done
-2.1 Lambertian shading 				- Done (using a directional light)
-2.2 Ambient shading 				- Done
-2.3 Phong shading 				- Done (using Blinn-Phong shading)
-2.4 Non-uniform scaling problem 		- Done
-3.1 Texturing a quad using UV-coordinates 	- Not finished
+See Game1.cs -> LoadContent() -> modelMaterial.NormalColoring to set this option.
 
-The shader code for this assignment is finished, we now need to render the quad
-with a texture.
+1.2 Checkerboard pattern 			- Done
+See Game1.cs -> LoadContent() -> modelMaterial.ProceduralColoring to set this option.
+
+2.1 Lambertian shading 				- Done (using a directional light)
+See Game1.cs -> LoadContent() -> modelMaterial.DiffuseColor to set this option.
+
+2.2 Ambient shading 				- Done
+See Game1.cs -> LoadContent() -> modelMaterial.AmbientColor/AmbientIntensity to set
+this option.
+
+2.3 Phong shading 				- Done (using Blinn-Phong shading)
+See Game1.cs -> LoadContent() -> modelMaterial.SpecularColor/SpecularIntensity/SpecularPower
+to set this option.
+
+2.4 Non-uniform scaling problem 		- Done
+See Simple.fx -> SimpleVertexShader() -> rotationAndScale to set this option.
+Either the rotation and scale matrix can be used, or the (correct) worldInverseTranspose.
+
+3.1 Texturing a quad using UV-coordinates 	- Done
+See Game1.cs -> SetupQuad()/DrawScene() and Simple.fx -> QuadShader to set this option.
 
 -------------------------
 --- Bonus assignments ---
 -------------------------
 
 4.1 Gamma correction				- Done
-
 See the shader file PostProcessing.fx and the class file Game1.cs for this
 implementation. Instead of rendering directly to the screen, the scene is first
 rendered to a render target, which is then post-processed with gamma correction
@@ -43,7 +55,7 @@ and displayed to the screen. This resulted in some different methods used for
 drawing, which do not affect the end result with post-processing disabled.
 The gamma value is set to 1.0 at default and is applied to all the other assignments.
 With the default value, however, this will not change the output.
+See Game1.cs -> Draw() to set the gamma value.
 
 4.2 Normal mapping				- Not done
-
 This assignment is not implemented at all.

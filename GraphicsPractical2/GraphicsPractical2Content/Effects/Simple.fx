@@ -8,6 +8,7 @@
 
 // Matrices for 3D perspective projection 
 float4x4 View, Projection, World;
+float4x4 QuadWorld;
 // Matrix for inverse transpose of world. Used for correct normals calculations.
 float4x4 WorldInverseTranspose;
 
@@ -35,8 +36,8 @@ sampler2D textureSampler = sampler_state
 	Texture = (DiffuseTexture);
 	MinFilter = Linear;
 	MagFilter = Linear;
-	AddressU = Clamp;
-	AddressV = Clamp;
+	AddressU = Wrap;
+	AddressV = Wrap;
 };
 
 // Variables for extra coloring functions.
@@ -80,7 +81,7 @@ float4 NormalColor(float4 normal)
 	// The output color is based on the normals. Alpha is set to 1.
 	float4 color = float4(normal.x, normal.y, normal.z, 1);
 
-	return color;
+		return color;
 }
 
 float4 ProceduralColor(float4 normal, float3 position)
@@ -114,8 +115,8 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 
 	// Do the matrix multiplications for perspective projection and the world transform.
 	float4 worldPosition = mul(input.Position, World);
-	float4 viewPosition = mul(worldPosition, View);
-	output.Position = mul(viewPosition, Projection);
+		float4 viewPosition = mul(worldPosition, View);
+		output.Position = mul(viewPosition, Projection);
 
 	// Relay the input normals.
 	output.Normal = input.Normal;
@@ -130,10 +131,10 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 
 	// Extract the top-left of the world matrix.
 	float3x3 rotationAndScale = (float3x3) World;
-	float3 normal = mul(input.Normal, rotationAndScale);
-	// Use this line instead of the above two to correctly handle the normals with non-uniform scaling.
-	//float3 normal = mul(input.Normal, WorldInverseTranspose);
-	normal = normalize(normal);
+		float3 normal = mul(input.Normal, rotationAndScale);
+		// Use this line instead of the above two to correctly handle the normals with non-uniform scaling.
+		//float3 normal = mul(input.Normal, WorldInverseTranspose);
+		normal = normalize(normal);
 	// The color is proportional to the angle between the surface normal and direction to the light source.
 	// Surfaces pointing away from the light do not receive any light.
 	float lightIntensity = max(0, dot(normal, -LightSourceDirection));
@@ -173,13 +174,7 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 		float3 h = normalize(v + l);
 		float4 specular = SpecularColor * SpecularIntensity * pow(saturate(dot(n, h)), SpecularPower);
 
-		// Sample the texture colors with no transparency and blend with the diffuse light.
-		if (HasTexture)
-		{
-			float4 textureColor = tex2D(textureSampler, input.TextureCoordinate);
-			textureColor.a = 1;
-			input.Color = input.Color * textureColor;
-		}
+
 
 		// Add the ambient and specular light to the already calculated diffuse light and texture.
 		color = saturate(input.Color + ambient + specular);
@@ -188,11 +183,66 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 	return color;
 }
 
+VertexShaderOutput QuadVertexShader(VertexShaderInput input)
+{
+	// Allocate an empty output struct.
+	VertexShaderOutput output = (VertexShaderOutput)0;
+
+	// Do the matrix multiplications for perspective projection and the world transform.
+	float4 worldPosition = mul(input.Position, QuadWorld);
+		float4 viewPosition = mul(worldPosition, View);
+		output.Position = mul(viewPosition, Projection);
+
+	// Relay the input normals.
+	output.Normal = input.Normal;
+	// Relay the texture coordinates.
+	output.TextureCoordinate = input.TextureCoordinate;
+
+	// Use this line for NormalColor and ProceduralColor. Leaving it will not cause harm, as the color
+	// will later be overridden by the diffuse color.
+	output.Color = input.Normal;
+	// Relay the POSITION0 information to the TEXCOORD2 semantic, for use in the pixel shader.
+	output.WorldPos = input.Position;
+
+	// Extract the top-left of the world matrix.
+	//float3x3 rotationAndScale = (float3x3) QuadWorld;
+	//float3 normal = mul(input.Normal, rotationAndScale);
+	// Use this line instead of the above two to correctly handle the normals with non-uniform scaling.
+	float3 normal = mul(input.Normal, WorldInverseTranspose);
+	normal = normalize(normal);
+	// The color is proportional to the angle between the surface normal and direction to the light source.
+	// Surfaces pointing away from the light do not receive any light.
+	float lightIntensity = max(0, dot(normal, -LightSourceDirection));
+	// Take the diffuse color and intensity into account.
+	output.Color = saturate(DiffuseColor * DiffuseIntensity * lightIntensity);
+
+	return output;
+}
+
+float4 QuadPixelShader(VertexShaderOutput input) : COLOR0
+{
+	// Sample the texture colors with no transparency and blend with the diffuse light.
+	float4 textureColor = tex2D(textureSampler, input.TextureCoordinate);
+	textureColor.a = 1;
+	input.Color = input.Color * textureColor;
+
+	return textureColor;
+}
+
 technique Simple
 {
 	pass Pass0
 	{
 		VertexShader = compile vs_2_0 SimpleVertexShader();
 		PixelShader = compile ps_2_0 SimplePixelShader();
+	}
+}
+
+technique Quadshader
+{
+	pass Pass0
+	{
+		VertexShader = compile vs_2_0 QuadVertexShader();
+		PixelShader = compile ps_2_0 QuadPixelShader();
 	}
 }
