@@ -117,9 +117,9 @@ VertexShaderOutput SimpleVertexShader(VertexShaderInput input)
 	output.TextureCoordinate = input.TextureCoordinate;
 
 	// Use these two lines for NormalColor and ProceduralColor, comment out otherwise.
-	output.Color = input.Normal;
+	//output.Color = input.Normal;
 	// Relay the POSITION0 information to the TEXCOORD1 semantic, for use in the pixel shader.
-	output.Position3D = input.Position3D;
+	//output.Position3D = input.Position3D;
 
 	// Extract the top-left of the world matrix.
 	float3x3 rotationAndScale = (float3x3) World;
@@ -139,15 +139,15 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 {
 	// Use these two for NormalColor and ProceduralColor, comment out otherwise.
 	//float4 color = NormalColor(input.Normal);
-	float4 color = ProceduralColor(input.Normal, input.Position3D);
+	//float4 color = ProceduralColor(input.Normal, input.Position3D);
 
 	// The ambient color is the same everywhere: a predefined color at a certain intensity.
 	float4 ambient = AmbientColor * AmbientIntensity;
 
 	// The light vector l is the direction from the location to the light.
-	float3 l = normalize(-LightSourceDirection);
+	float3 l = -LightSourceDirection;
 	// The normal vector n denotes the normal of the surface.
-	float3 n = normalize(input.Normal);
+	float3 n = input.Normal;
 	// Calculate the half vector, which is the bisector of the angle between the view vector v and light vector l.
 	float3 h = normalize(l + ViewVector);
 	float4 specular = SpecularColor * SpecularIntensity * pow(max(0, dot(n, h)), SpecularPower);
@@ -162,7 +162,7 @@ float4 SimplePixelShader(VertexShaderOutput input) : COLOR0
 	}
 
 	// Add the ambient and specular light to the already calculated diffuse light and texture.
-	//float4 color = saturate(input.Color + ambient + specular);
+	float4 color = saturate(input.Color + ambient +specular);
 
 	return color;
 }

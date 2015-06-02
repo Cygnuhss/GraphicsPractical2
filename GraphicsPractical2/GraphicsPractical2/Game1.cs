@@ -30,8 +30,7 @@ namespace GraphicsPractical2
         private short[] quadIndices;
         private Matrix quadTransform;
 
-        // Quad effect and material
-        private Effect quadEffect;
+        // Quad material
         private Material quadMaterial;
 
         public Game1()
@@ -88,7 +87,7 @@ namespace GraphicsPractical2
             // Set the specular intensity.
             this.modelMaterial.SpecularIntensity = 2.0f;
             // Set the specular power.
-            this.modelMaterial.SpecularPower = 2.5f;
+            this.modelMaterial.SpecularPower = 25.0f;
             // Do not set a texture for the model.
             this.modelMaterial.DiffuseTexture = null;
         }
@@ -120,8 +119,7 @@ namespace GraphicsPractical2
             this.quadIndices = new short[] { 0, 1, 2, 1, 2, 3 };
             this.quadTransform = Matrix.CreateScale(scale);
 
-            // Load the "Simple" effect as a quad effect.
-            this.quadEffect = this.Content.Load<Effect>("Effects/Simple");
+           
 
             // Setup the material.
             this.quadMaterial = new Material();
@@ -172,7 +170,7 @@ namespace GraphicsPractical2
             // Set the light source.
             effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
             // Set the view direction.
-            Vector3 view = this.camera.Focus;
+            Vector3 view =  this.camera.Eye;
             //Vector3 view = new Vector3(this.camera.ViewMatrix.M13, this.camera.ViewMatrix.M23, this.camera.ViewMatrix.M33);
             effect.Parameters["ViewVector"].SetValue(view);
             // Set all the material parameters.
@@ -189,24 +187,21 @@ namespace GraphicsPractical2
             mesh.Draw();
 
             // Set the effect parameters
-            quadEffect.CurrentTechnique = quadEffect.Techniques["Simple"];
+            effect.CurrentTechnique = effect.Techniques["Simple"];
             // Matrices for 3D perspective projection
-            this.camera.SetEffectParameters(quadEffect);
-            quadEffect.Parameters["World"].SetValue(this.quadTransform);
+            this.camera.SetEffectParameters(effect);
+            effect.Parameters["World"].SetValue(this.quadTransform);
             // Set world inverse transpose.
-            Matrix worldInverseTransposeMatrix2 = Matrix.Transpose(Matrix.Invert(this.quadTransform));
-            quadEffect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
+            worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(this.quadTransform));
+            effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
             // Set the light source.
-            quadEffect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
-            // Set the view direction.
-            Vector3 view2 = this.camera.Focus;
-            //Vector3 view = new Vector3(this.camera.ViewMatrix.M13, this.camera.ViewMatrix.M23, this.camera.ViewMatrix.M33);
-            quadEffect.Parameters["ViewVector"].SetValue(view);
+            effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
+            
 
             // Set all the quad material parameters.
-            this.quadMaterial.SetEffectParameters(quadEffect);
+            this.quadMaterial.SetEffectParameters(effect);
 
-            foreach (EffectPass pass in quadEffect.CurrentTechnique.Passes)
+            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
             {
                 pass.Apply();
             }
