@@ -175,3 +175,8 @@ technique Simple
 		PixelShader = compile ps_2_0 SimplePixelShader();
 	}
 }
+
+technique Lambert
+{
+	
+};

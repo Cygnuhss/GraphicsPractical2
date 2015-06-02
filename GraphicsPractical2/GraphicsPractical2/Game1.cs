@@ -117,9 +117,7 @@ namespace GraphicsPractical2
             this.quadVertices[3].Normal = quadNormal;
 
             this.quadIndices = new short[] { 0, 1, 2, 1, 2, 3 };
-            this.quadTransform = Matrix.CreateScale(scale);
-
-           
+            this.quadTransform = Matrix.CreateScale(scale);           
 
             // Setup the material.
             this.quadMaterial = new Material();
@@ -162,6 +160,9 @@ namespace GraphicsPractical2
             effect.CurrentTechnique = effect.Techniques["Simple"];
             // Matrices for 3D perspective projection
             this.camera.SetEffectParameters(effect);
+            // Non-uniform scale.
+            Matrix scale = Matrix.CreateScale(new Vector3(10.0f, 6.5f, 2.5f));
+            // Uniform scale.
             Matrix world = Matrix.CreateScale(10.0f);
             effect.Parameters["World"].SetValue(world);
             // Set world inverse transpose.
@@ -170,8 +171,7 @@ namespace GraphicsPractical2
             // Set the light source.
             effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
             // Set the view direction.
-            Vector3 view =  this.camera.Eye;
-            //Vector3 view = new Vector3(this.camera.ViewMatrix.M13, this.camera.ViewMatrix.M23, this.camera.ViewMatrix.M33);
+            Vector3 view =  this.camera.Focus;
             effect.Parameters["ViewVector"].SetValue(view);
             // Set all the material parameters.
             this.modelMaterial.SetEffectParameters(effect);
@@ -195,8 +195,7 @@ namespace GraphicsPractical2
             worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(this.quadTransform));
             effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
             // Set the light source.
-            effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));
-            
+            effect.Parameters["LightSourceDirection"].SetValue(new Vector3(-1.0f, -1.0f, -1.0f));            
 
             // Set all the quad material parameters.
             this.quadMaterial.SetEffectParameters(effect);
