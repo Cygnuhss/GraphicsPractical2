@@ -32,6 +32,7 @@ namespace GraphicsPractical2
 
         // Quad material
         private Material quadMaterial;
+        private Texture2D floorTexture;
 
         // Gamma correction
         private Effect gammaEffect;
@@ -78,6 +79,7 @@ namespace GraphicsPractical2
 
         protected override void LoadContent()
         {
+            floorTexture = Content.Load<Texture2D>("Textures/CobblestonesDiffuse");
             // Create a SpriteBatch object.
             this.spriteBatch = new SpriteBatch(this.GraphicsDevice);
             // Load the "Simple" effect.
@@ -104,7 +106,7 @@ namespace GraphicsPractical2
             // Set the specular power.
             this.modelMaterial.SpecularPower = 25.0f;
             // Do not set a texture for the model.
-            this.modelMaterial.DiffuseTexture = null;
+            this.modelMaterial.DiffuseTexture = floorTexture;
             // Disable the normal and procedural coloring.
             this.modelMaterial.NormalColoring = false;
             this.modelMaterial.ProceduralColoring = false;
@@ -118,7 +120,7 @@ namespace GraphicsPractical2
         /// </summary>
         private void setupQuad()
         {
-            float scale = 50.0f;
+            float scale = 500.0f;
 
             // Normal points up
             Vector3 quadNormal = new Vector3(0, 1, 0);
@@ -131,15 +133,15 @@ namespace GraphicsPractical2
             // Top right
             this.quadVertices[1].Position = new Vector3(1, 0, -1);
             this.quadVertices[1].Normal = quadNormal;
-            this.quadVertices[1].TextureCoordinate = new Vector2(1.0f, 0.0f);
+            this.quadVertices[1].TextureCoordinate = new Vector2(2.0f, 0.0f);
             // Bottom left
             this.quadVertices[2].Position = new Vector3(-1, 0, 1);
             this.quadVertices[2].Normal = quadNormal;
-            this.quadVertices[2].TextureCoordinate = new Vector2(0.0f, 1.0f);
+            this.quadVertices[2].TextureCoordinate = new Vector2(0.0f, 2.0f);
             // Bottom right
             this.quadVertices[3].Position = new Vector3(1, 0, 1);
             this.quadVertices[3].Normal = quadNormal;
-            this.quadVertices[3].TextureCoordinate = new Vector2(1.0f, 1.0f);
+            this.quadVertices[3].TextureCoordinate = new Vector2(2.0f, 2.0f);
 
             this.quadIndices = new short[] { 0, 1, 2, 1, 2, 3 };
             this.quadTransform = Matrix.CreateScale(scale);
@@ -212,8 +214,8 @@ namespace GraphicsPractical2
             // Non-uniform scale.
             Matrix scale = Matrix.CreateScale(new Vector3(10.0f, 6.5f, 2.5f));
             // Uniform scale.
-            Matrix world = Matrix.CreateScale(10.0f);
-            effect.Parameters["World"].SetValue(scale);
+            Matrix world = scale * Matrix.CreateTranslation(new Vector3 (0 ,8.5f ,0));
+            effect.Parameters["World"].SetValue(world);
             // Set world inverse transpose.
             Matrix worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(mesh.ParentBone.Transform * world));
             effect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
@@ -241,12 +243,15 @@ namespace GraphicsPractical2
             */
             // Set all the quad material parameters.
             this.quadMaterial.SetEffectParameters(effect);
-
+            effect.CurrentTechnique = effect.Techniques["Quadshader"];
+            effect.Parameters["QuadWorld"].SetValue(Matrix.CreateScale(50));
+            effect.Parameters["HasTexture"].SetValue(true);
             // Draw the ground texture.
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)
             {
                 pass.Apply();
 
+               // this.GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, this.quadVertices, 0, this.quadVertices.Length / 3, VertexPositionNormalTexture.VertexDeclaration);
                 this.GraphicsDevice.DrawUserIndexedPrimitives(PrimitiveType.TriangleList,
                     this.quadVertices, 0, this.quadVertices.Length,
                     this.quadIndices, 0, this.quadIndices.Length / 3);
